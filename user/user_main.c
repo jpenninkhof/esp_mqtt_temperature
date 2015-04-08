@@ -99,8 +99,10 @@ LOCAL void ICACHE_FLASH_ATTR dhtCb(void *arg)
 	{
 	    char buff[20];
 	    INFO("Reading sensor on GPIO%d\r\n", pin);
+	    INFO("Temperature: %d *C\r\n", data.temperature);
 	    INFO("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
 	    if (mqttClient.connState == MQTT_DATA) MQTT_Publish(&mqttClient, "/esp8266/thermometer/temperature", buff, strlen(buff), 0, 0);
+	    INFO("Humidity: %d %%\r\n", data.humidity);
 	    INFO("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
 	    if (mqttClient.connState == MQTT_DATA) MQTT_Publish(&mqttClient, "/esp8266/thermometer/humidity", buff, strlen(buff), 0, 0);
 	} else {
