@@ -56,7 +56,6 @@ void mqttConnectedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Connected\r\n");
-	MQTT_Publish(client, "/mqtt/topic/0", "hello0", 6, 0, 0);
 }
 
 void mqttDisconnectedCb(uint32_t *args)
@@ -99,29 +98,15 @@ LOCAL void ICACHE_FLASH_ATTR dhtCb(void *arg)
 	if (DHTRead(&sensor, &data))
 	{
 	    char buff[20];
+	    char* temperature = DHTFloat2String(buff, data.temperature);
+	    char* humidity = DHTFloat2String(buff, data.temperature);
 	    INFO("Reading sensor on GPIO%d\r\n", pin);
-	    INFO("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
-	    INFO("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
-
-	    if (mqttClient.connState == WIFI_INIT) INFO("WIFI_INIT");
-	    if (mqttClient.connState == WIFI_CONNECTING) INFO("WIFI_CONNECTING");
-	    if (mqttClient.connState == WIFI_CONNECTING_ERROR) INFO("WIFI_CONNECTING_ERROR");
-	    if (mqttClient.connState == WIFI_CONNECTED) INFO("WIFI_CONNECTED");
-	    if (mqttClient.connState == DNS_RESOLVE) INFO("DNS_RESOLVE");
-	    if (mqttClient.connState == TCP_DISCONNECTED) INFO("TCP_DISCONNECTED");
-	    if (mqttClient.connState == TCP_RECONNECT_REQ) INFO("TCP_RECONNECT_REQ");
-	    if (mqttClient.connState == TCP_RECONNECT) INFO("TCP_RECONNECT");
-	    if (mqttClient.connState == TCP_CONNECTING) INFO("TCP_CONNECTING");
-	    if (mqttClient.connState == TCP_CONNECTING_ERROR) INFO("TCP_CONNECTING_ERROR");
-	    if (mqttClient.connState == TCP_CONNECTED) INFO("TCP_CONNECTED");
-	    if (mqttClient.connState == MQTT_CONNECT_SEND) INFO("MQTT_CONNECT_SEND");
-	    if (mqttClient.connState == MQTT_CONNECT_SENDING) INFO("MQTT_CONNECT_SENDING");
-	    if (mqttClient.connState == MQTT_SUBSCIBE_SEND) INFO("MQTT_SUBSCIBE_SEND");
-	    if (mqttClient.connState == MQTT_SUBSCIBE_SENDING) INFO("MQTT_SUBSCIBE_SENDING");
-	    if (mqttClient.connState == MQTT_DATA) INFO("MQTT_DATA");
-	    if (mqttClient.connState == MQTT_PUBLISH_RECV) INFO("MQTT_PUBLISH_RECV");
-	    if (mqttClient.connState == MQTT_PUBLISHING) INFO("MQTT_PUBLISHING");
-
+	    INFO("Temperature: %s *C\r\n", temperature);
+	    INFO("Humidity: %s %%\r\n", humidity);
+	    if (mqttClient.connState == MQTT_DATA) {
+	    	MQTT_Publish(mqttClient, "/esp8266/thermometer/temperature", temperature, sizeof(temperature), 0, 0);
+	    	MQTT_Publish(mqttClient, "/esp8266/thermometer/humidity", humidity, sizeof(humidity), 0, 0);
+	    }
 	} else {
 		INFO("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
 	}
