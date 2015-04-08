@@ -99,9 +99,29 @@ LOCAL void ICACHE_FLASH_ATTR dhtCb(void *arg)
 	if (DHTRead(&sensor, &data))
 	{
 	    char buff[20];
-	    INFO("GPIO%d\r\n", pin);
+	    INFO("Reading sensor on GPIO%d\r\n", pin);
 	    INFO("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
 	    INFO("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
+
+	    if (mqttClient.connState == WIFI_INIT) INFO("WIFI_INIT");
+	    if (mqttClient.connState == WIFI_CONNECTING) INFO("WIFI_CONNECTING");
+	    if (mqttClient.connState == WIFI_CONNECTING_ERROR) INFO("WIFI_CONNECTING_ERROR");
+	    if (mqttClient.connState == WIFI_CONNECTED) INFO("WIFI_CONNECTED");
+	    if (mqttClient.connState == DNS_RESOLVE) INFO("DNS_RESOLVE");
+	    if (mqttClient.connState == TCP_DISCONNECTED) INFO("TCP_DISCONNECTED");
+	    if (mqttClient.connState == TCP_RECONNECT_REQ) INFO("TCP_RECONNECT_REQ");
+	    if (mqttClient.connState == TCP_RECONNECT) INFO("TCP_RECONNECT");
+	    if (mqttClient.connState == TCP_CONNECTING) INFO("TCP_CONNECTING");
+	    if (mqttClient.connState == TCP_CONNECTING_ERROR) INFO("TCP_CONNECTING_ERROR");
+	    if (mqttClient.connState == TCP_CONNECTED) INFO("TCP_CONNECTED");
+	    if (mqttClient.connState == MQTT_CONNECT_SEND) INFO("MQTT_CONNECT_SEND");
+	    if (mqttClient.connState == MQTT_CONNECT_SENDING) INFO("MQTT_CONNECT_SENDING");
+	    if (mqttClient.connState == MQTT_SUBSCIBE_SEND) INFO("MQTT_SUBSCIBE_SEND");
+	    if (mqttClient.connState == MQTT_SUBSCIBE_SENDING) INFO("MQTT_SUBSCIBE_SENDING");
+	    if (mqttClient.connState == MQTT_DATA) INFO("MQTT_DATA");
+	    if (mqttClient.connState == MQTT_PUBLISH_RECV) INFO("MQTT_PUBLISH_RECV");
+	    if (mqttClient.connState == MQTT_PUBLISHING) INFO("MQTT_PUBLISHING");
+
 	} else {
 		INFO("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
 	}
@@ -115,9 +135,9 @@ void user_init(void)
 
 	CFG_Load();
 
-	sensor.pin = 4;
-	sensor.type = DHT22; // Pin number 4 = GPIO2
-	INFO("DHT22 init on GPIO%d\r\n", pin_num[sensor.pin]);
+	sensor.pin = 4; // Pin number 4 = GPIO2
+	sensor.type = DHT22;
+	INFO("DHT init on GPIO%d\r\n", pin_num[sensor.pin]);
 	DHTInit(&sensor);
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
