@@ -29,16 +29,20 @@
 */
 #include "ets_sys.h"
 #include "driver/uart.h"
+#include "driver/dht22.h"
+#include "driver/gpio16.h"
 #include "osapi.h"
 #include "mqtt.h"
 #include "wifi.h"
 #include "config.h"
 #include "debug.h"
-#include "gpio.h"
 #include "user_interface.h"
 #include "mem.h"
 
 MQTT_Client mqttClient;
+LOCAL os_timer_t dhtTimer;
+extern uint8_t pin_num[GPIO_PIN_NUM];
+DHT_Sensor sensor;
 
 void wifiConnectCb(uint8_t status)
 {
@@ -52,14 +56,7 @@ void mqttConnectedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Connected\r\n");
-	MQTT_Subscribe(client, "/mqtt/topic/0", 0);
-	MQTT_Subscribe(client, "/mqtt/topic/1", 1);
-	MQTT_Subscribe(client, "/mqtt/topic/2", 2);
-
 	MQTT_Publish(client, "/mqtt/topic/0", "hello0", 6, 0, 0);
-	MQTT_Publish(client, "/mqtt/topic/1", "hello1", 6, 1, 0);
-	MQTT_Publish(client, "/mqtt/topic/2", "hello2", 6, 2, 0);
-
 }
 
 void mqttDisconnectedCb(uint32_t *args)
@@ -92,6 +89,24 @@ void mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const cha
 	os_free(dataBuf);
 }
 
+LOCAL void ICACHE_FLASH_ATTR dhtCb(void *arg)
+{
+	static uint8_t i;
+	DHT_Sensor_Data data;
+	uint8_t pin;
+	os_timer_disarm(&dhtTimer);
+	pin = pin_num[sensor.pin];
+	if (DHTRead(&sensor, &data))
+	{
+	    char buff[20];
+	    INFO("GPIO%d\r\n", pin);
+	    INFO("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
+	    INFO("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
+	} else {
+		INFO("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
+	}
+	os_timer_arm(&dhtTimer, DELAY, 1);
+}
 
 void user_init(void)
 {
@@ -100,12 +115,13 @@ void user_init(void)
 
 	CFG_Load();
 
+	sensor.pin = 4;
+	sensor.type = DHT22; // Pin number 4 = GPIO2
+	INFO("DHT22 init on GPIO%d\r\n", pin_num[sensor.pin]);
+	DHTInit(&sensor);
+
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
-	//MQTT_InitConnection(&mqttClient, "192.168.11.122", 1880, 0);
-
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);
-	//MQTT_InitClient(&mqttClient, "client_id", "user", "pass", 120, 1);
-
 	MQTT_InitLWT(&mqttClient, "/lwt", "offline", 0, 0);
 	MQTT_OnConnected(&mqttClient, mqttConnectedCb);
 	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
@@ -113,6 +129,10 @@ void user_init(void)
 	MQTT_OnData(&mqttClient, mqttDataCb);
 
 	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
+
+	os_timer_disarm(&dhtTimer);
+	os_timer_setfn(&dhtTimer, (os_timer_func_t *)dhtCb, (void *)0);
+	os_timer_arm(&dhtTimer, DELAY, 1);
 
 	INFO("\r\nSystem started ...\r\n");
 }
