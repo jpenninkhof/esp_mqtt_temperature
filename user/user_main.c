@@ -98,15 +98,11 @@ LOCAL void ICACHE_FLASH_ATTR dhtCb(void *arg)
 	if (DHTRead(&sensor, &data))
 	{
 	    char buff[20];
-	    char* temperature = DHTFloat2String(buff, data.temperature);
-	    char* humidity = DHTFloat2String(buff, data.temperature);
 	    INFO("Reading sensor on GPIO%d\r\n", pin);
-	    INFO("Temperature: %s *C\r\n", temperature);
-	    INFO("Humidity: %s %%\r\n", humidity);
-	    if (mqttClient.connState == MQTT_DATA) {
-	    	MQTT_Publish(mqttClient, "/esp8266/thermometer/temperature", temperature, sizeof(temperature), 0, 0);
-	    	MQTT_Publish(mqttClient, "/esp8266/thermometer/humidity", humidity, sizeof(humidity), 0, 0);
-	    }
+	    INFO("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
+	    if (mqttClient.connState == MQTT_DATA) MQTT_Publish(&mqttClient, "/esp8266/thermometer/temperature", buff, strlen(buff), 0, 0);
+	    INFO("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
+	    if (mqttClient.connState == MQTT_DATA) MQTT_Publish(&mqttClient, "/esp8266/thermometer/humidity", buff, strlen(buff), 0, 0);
 	} else {
 		INFO("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
 	}
