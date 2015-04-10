@@ -24,29 +24,27 @@
 
 #include "ets_sys.h"
 #include "osapi.h"
+#include "gpio.h"
 
-typedef enum {
+enum DHTType{
 	DHT11,
 	DHT22
-} DHTType;
+};
 
-typedef struct {
-  float temperature;
-  float humidity;
-} DHT_Sensor_Data;
-
-typedef struct {
-  uint8_t pin;
-  DHTType type;
-} DHT_Sensor;
+struct dht_sensor_data {
+	float temperature;
+	float humidity;
+	BOOL success;
+};
 
 #define DHT_MAXTIMINGS	10000
 #define DHT_BREAKTIME	20
 #define DHT_MAXCOUNT	32000
-//#define DHT_DEBUG		true
+#define DHT_MUX			PERIPHS_IO_MUX_GPIO2_U
+#define DHT_FUNC		FUNC_GPIO2
+#define DHT_PIN			2
 
-bool DHTInit(DHT_Sensor *sensor);
-bool DHTRead(DHT_Sensor *sensor, DHT_Sensor_Data* output);
-char* DHTFloat2String(char* buffer, float value);
+void DHTInit(enum DHTType dht_type);
+struct dht_sensor_data *DHTRead(void);
 
 #endif

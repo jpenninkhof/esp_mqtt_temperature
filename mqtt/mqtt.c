@@ -272,7 +272,7 @@ void ICACHE_FLASH_ATTR mqtt_timer(void *arg)
 		client->keepAliveTick ++;
 		if(client->keepAliveTick > client->mqtt_state.connect_info->keepalive){
 
-			INFO("\r\nMQTT: Send keepalive packet to %s:%d!\r\n", client->host, client->port);
+			INFO("MQTT: Send keepalive packet to %s:%d!\r\n", client->host, client->port);
 			client->mqtt_state.outbound_message = mqtt_msg_pingreq(&client->mqtt_state.mqtt_connection);
 			client->mqtt_state.pending_msg_type = MQTT_MSG_TYPE_PINGREQ;
 			client->mqtt_state.pending_msg_type = mqtt_get_type(client->mqtt_state.outbound_message->data);

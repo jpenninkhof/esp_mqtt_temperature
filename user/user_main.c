@@ -1,36 +1,20 @@
-/* main.c -- MQTT client example
-*
-* Copyright (c) 2014-2015, Tuan PM <tuanpm at live dot com>
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*
-* * Redistributions of source code must retain the above copyright notice,
-* this list of conditions and the following disclaimer.
-* * Redistributions in binary form must reproduce the above copyright
-* notice, this list of conditions and the following disclaimer in the
-* documentation and/or other materials provided with the distribution.
-* * Neither the name of Redis nor the names of its contributors may be used
-* to endorse or promote products derived from this software without
-* specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-* POSSIBILITY OF SUCH DAMAGE.
-*/
+/*
+ *  Example of working sensor DHT22 (temperature and humidity) and send data to MQTT
+ *
+ *  For a single device, connect as follows:
+ *  DHT22 1 (Vcc) to Vcc (3.3 Volts)
+ *  DHT22 2 (DATA_OUT) to ESP Pin GPIO2
+ *  DHT22 3 (NC)
+ *  DHT22 4 (GND) to GND
+ *
+ *  Between Vcc and DATA_OUT needs to connect a pull-up resistor of 10 kOhm.
+ *
+ *  (c) 2015 by Mikhail Grigorev <sleuthhound@gmail.com>
+ *
+ */
 #include "ets_sys.h"
 #include "driver/uart.h"
 #include "driver/dht22.h"
-#include "driver/gpio16.h"
 #include "osapi.h"
 #include "mqtt.h"
 #include "wifi.h"
@@ -41,8 +25,6 @@
 
 MQTT_Client mqttClient;
 LOCAL os_timer_t dhtTimer;
-extern uint8_t pin_num[GPIO_PIN_NUM];
-DHT_Sensor sensor;
 
 void wifiConnectCb(uint8_t status)
 {
@@ -90,30 +72,38 @@ void mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const cha
 
 LOCAL void ICACHE_FLASH_ATTR dhtCb(void *arg)
 {
-	static uint8_t i;
-	static float lastTemperature;
-	static float lastHumidity;
-	DHT_Sensor_Data data;
-	uint8_t pin;
+	static char data[256];
+	static char temp[10];
+	static char hum[10];
+	uint8_t status;
 	os_timer_disarm(&dhtTimer);
-	pin = pin_num[sensor.pin];
-	if (DHTRead(&sensor, &data))
+	struct dht_sensor_data* r = DHTRead();
+	float curTemp = r->temperature;
+	float curHum = r->humidity;
+	static float lastTemp;
+	static float lastHum;
+	uint8_t topic[32];
+	if(r->success)
 	{
-	    char buff[20];
-	    INFO("Reading sensor on GPIO%d\r\n", pin);
-	    INFO("Temperature: %s *C\r\n", DHTFloat2String(buff, data.temperature));
-	    if (mqttClient.connState == MQTT_DATA && data.temperature != lastTemperature) {
-	    	MQTT_Publish(&mqttClient, "/esp8266/thermometer/temperature", buff, strlen(buff), 0, 0);
-	    	lastTemperature = data.temperature;
-	    }
-	    INFO("Humidity: %s %%\r\n", DHTFloat2String(buff, data.humidity));
-	    if (mqttClient.connState == MQTT_DATA && data.humidity != lastHumidity) {
-	    	MQTT_Publish(&mqttClient, "/esp8266/thermometer/humidity", buff, strlen(buff), 0, 0);
-	    	lastHumidity = data.humidity;
-	    }
-	} else {
-		INFO("Failed to read temperature and humidity sensor on GPIO%d\n", pin);
+		os_sprintf(temp, "%d.%d",(int)(curTemp),(int)((curTemp - (int)curTemp)*100));
+		os_sprintf(hum, "%d.%d",(int)(curHum),(int)((curHum - (int)curHum)*100));
+		INFO("Temperature: %s *C, Humidity: %s %%\r\n", temp, hum);
+		if (mqttClient.connState == MQTT_DATA && lastTemp != curTemp) {
+			os_sprintf(topic, "%s%s", sysCfg.topic_prefix, "temperature");
+			MQTT_Publish(&mqttClient, topic, temp, strlen(temp), 0, 0);
+			lastTemp = curTemp;
+		}
+		if (mqttClient.connState == MQTT_DATA && lastHum != curHum) {
+			os_sprintf(topic, "%s%s", sysCfg.topic_prefix, "humidity");
+			MQTT_Publish(&mqttClient, topic, hum, strlen(hum), 0, 0);
+			lastHum = curHum;
+		}
 	}
+	else
+	{
+		INFO("Error reading temperature and humidity.\r\n");
+	}
+	os_timer_setfn(&dhtTimer, (os_timer_func_t *)dhtCb, (void *)0);
 	os_timer_arm(&dhtTimer, DELAY, 1);
 }
 
@@ -124,10 +114,7 @@ void user_init(void)
 
 	CFG_Load();
 
-	sensor.pin = 4; // Pin number 4 = GPIO2
-	sensor.type = DHT22;
-	INFO("DHT init on GPIO%d\r\n", pin_num[sensor.pin]);
-	DHTInit(&sensor);
+	DHTInit(DHT22);
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);

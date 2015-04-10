@@ -84,7 +84,6 @@ CFG_Load()
 	if(sysCfg.cfg_holder != CFG_HOLDER){
 		os_memset(&sysCfg, 0x00, sizeof sysCfg);
 
-
 		sysCfg.cfg_holder = CFG_HOLDER;
 
 		os_sprintf(sysCfg.sta_ssid, "%s", STA_SSID);
@@ -92,6 +91,7 @@ CFG_Load()
 		sysCfg.sta_type = STA_TYPE;
 
 		os_sprintf(sysCfg.device_id, MQTT_CLIENT_ID, system_get_chip_id());
+		os_sprintf(sysCfg.topic_prefix, MQTT_TOPIC_PREFIX, system_get_chip_id());
 		os_sprintf(sysCfg.mqtt_host, "%s", MQTT_HOST);
 		sysCfg.mqtt_port = MQTT_PORT;
 		os_sprintf(sysCfg.mqtt_user, "%s", MQTT_USER);

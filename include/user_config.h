@@ -7,17 +7,18 @@
 
 /*DEFAULT CONFIGURATIONS*/
 
-#define MQTT_HOST			"192.168.11.122" //or "mqtt.yourdomain.com"
+#define MQTT_HOST			"mosquitto.penninkhof.com" //or "mqtt.yourdomain.com"
 #define MQTT_PORT			1883
 #define MQTT_BUF_SIZE		1024
 #define MQTT_KEEPALIVE		120	 /*second*/
 
-#define MQTT_CLIENT_ID		"DVES_%08X"
-#define MQTT_USER			"DVES_USER"
-#define MQTT_PASS			"DVES_PASS"
+#define MQTT_CLIENT_ID		"DeviceX_%08X"
+#define MQTT_TOPIC_PREFIX	"/DeviceX/%08X/"
+#define MQTT_USER			"DeviceX_USER"
+#define MQTT_PASS			"DeviceX_PASS"
 
-#define STA_SSID "DVES_HOME"
-#define STA_PASS "yourpassword"
+#define STA_SSID "DeviceX"
+#define STA_PASS "password"
 #define STA_TYPE AUTH_WPA2_PSK
 
 #define MQTT_RECONNECT_TIMEOUT 	5	/*second*/
