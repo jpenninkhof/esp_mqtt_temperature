@@ -132,3 +132,5 @@ void user_init(void)
 
 	INFO("\r\nSystem started ...\r\n");
 }
+
+void user_rf_pre_init(void) {}

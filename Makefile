@@ -18,7 +18,8 @@ SDK_BASE	?= c:/Espressif/ESP8266_SDK
 # esptool path and port
 SDK_TOOLS	?= c:/Espressif/utils
 ESPTOOL		?= $(SDK_TOOLS)/esptool.exe
-ESPPORT		?= COM3
+ESPPORT		?= COM4
+ESPBAUD		?= 921600
 
 # name for the target project
 TARGET		= app
@@ -140,14 +141,14 @@ flashonefile: all
 	$(vecho) "No boot needed."
 	$(vecho) "Generate eagle.app.flash.bin successully in folder firmware."
 	$(vecho) "eagle.app.flash.bin-------->0x00000"
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.app.flash.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 firmware/eagle.app.flash.bin
 
 flash: all
-	$(ESPTOOL) -p $(ESPPORT) -b 256000 write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x00000 firmware/eagle.flash.bin 0x40000 firmware/eagle.irom0text.bin
 
 flashinit:
 	$(vecho) "Flash init data default and blank data."
-	$(ESPTOOL) -p $(ESPPORT) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
+	$(ESPTOOL) -p $(ESPPORT) -b $(ESPBAUD) write_flash 0x7c000 $(SDK_BASE)/bin/esp_init_data_default.bin 0x7e000 $(SDK_BASE)/bin/blank.bin
 
 rebuild: clean all
 
