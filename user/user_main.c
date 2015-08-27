@@ -26,7 +26,7 @@
 MQTT_Client mqttClient;
 LOCAL os_timer_t dhtTimer;
 
-void wifiConnectCb(uint8_t status)
+void wifi_connect_cb(uint8_t status)
 {
 	if(status == STATION_GOT_IP){
 		MQTT_Connect(&mqttClient);
@@ -34,25 +34,25 @@ void wifiConnectCb(uint8_t status)
 		MQTT_Disconnect(&mqttClient);
 	}
 }
-void mqttConnectedCb(uint32_t *args)
+void mqtt_connected_cb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Connected\r\n");
 }
 
-void mqttDisconnectedCb(uint32_t *args)
+void mqtt_disconnected_cb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Disconnected\r\n");
 }
 
-void mqttPublishedCb(uint32_t *args)
+void mqtt_published_cb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Published\r\n");
 }
 
-void mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len)
+void mqtt_data_cb(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len)
 {
 	char *topicBuf = (char*)os_zalloc(topic_len+1),
 			*dataBuf = (char*)os_zalloc(data_len+1);
@@ -89,12 +89,12 @@ LOCAL void ICACHE_FLASH_ATTR dhtCb(void *arg)
 		os_sprintf(hum, "%d.%d",(int)(curHum),(int)((curHum - (int)curHum)*100));
 		INFO("Temperature: %s *C, Humidity: %s %%\r\n", temp, hum);
 		if (mqttClient.connState == MQTT_DATA && lastTemp != curTemp) {
-			os_sprintf(topic, "%s%s", sysCfg.topic_prefix, "temperature");
+			os_sprintf(topic, "%s%s", config.mqtt_topic, "temperature");
 			MQTT_Publish(&mqttClient, topic, temp, strlen(temp), 0, 0);
 			lastTemp = curTemp;
 		}
 		if (mqttClient.connState == MQTT_DATA && lastHum != curHum) {
-			os_sprintf(topic, "%s%s", sysCfg.topic_prefix, "humidity");
+			os_sprintf(topic, "%s%s", config.mqtt_topic, "humidity");
 			MQTT_Publish(&mqttClient, topic, hum, strlen(hum), 0, 0);
 			lastHum = curHum;
 		}
@@ -112,19 +112,19 @@ void user_init(void)
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
 	os_delay_us(1000000);
 
-	CFG_Load();
+	config_load();
 
 	DHTInit(DHT22);
 
-	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
-	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);
+	MQTT_InitConnection(&mqttClient, config.mqtt_host, config.mqtt_port, config.security);
+	MQTT_InitClient(&mqttClient, config.device_id, config.mqtt_user, config.mqtt_pass, config.mqtt_keepalive, 1);
 	MQTT_InitLWT(&mqttClient, "/lwt", "offline", 0, 0);
-	MQTT_OnConnected(&mqttClient, mqttConnectedCb);
-	MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
-	MQTT_OnPublished(&mqttClient, mqttPublishedCb);
-	MQTT_OnData(&mqttClient, mqttDataCb);
+	MQTT_OnConnected(&mqttClient, mqtt_connected_cb);
+	MQTT_OnDisconnected(&mqttClient, mqtt_disconnected_cb);
+	MQTT_OnPublished(&mqttClient, mqtt_published_cb);
+	MQTT_OnData(&mqttClient, mqtt_data_cb);
 
-	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
+	WIFI_Connect(config.sta_ssid, config.sta_pwd, wifi_connect_cb);
 
 	os_timer_disarm(&dhtTimer);
 	os_timer_setfn(&dhtTimer, (os_timer_func_t *)dhtCb, (void *)0);

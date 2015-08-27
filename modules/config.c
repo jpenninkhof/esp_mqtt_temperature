@@ -39,71 +39,71 @@
 #include "user_config.h"
 #include "debug.h"
 
-SYSCFG sysCfg;
-SAVE_FLAG saveFlag;
+SYSCFG config;
+SAVE_FLAG save_flag;
 
 void ICACHE_FLASH_ATTR
-CFG_Save()
+config_save()
 {
 	 spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
-	                   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
+	                   (uint32 *)&save_flag, sizeof(SAVE_FLAG));
 
-	if (saveFlag.flag == 0) {
+	if (save_flag.flag == 0) {
 		spi_flash_erase_sector(CFG_LOCATION + 1);
 		spi_flash_write((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
-						(uint32 *)&sysCfg, sizeof(SYSCFG));
-		saveFlag.flag = 1;
+						(uint32 *)&config, sizeof(SYSCFG));
+		save_flag.flag = 1;
 		spi_flash_erase_sector(CFG_LOCATION + 3);
 		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
-						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
+						(uint32 *)&save_flag, sizeof(SAVE_FLAG));
 	} else {
 		spi_flash_erase_sector(CFG_LOCATION + 0);
 		spi_flash_write((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
-						(uint32 *)&sysCfg, sizeof(SYSCFG));
-		saveFlag.flag = 0;
+						(uint32 *)&config, sizeof(SYSCFG));
+		save_flag.flag = 0;
 		spi_flash_erase_sector(CFG_LOCATION + 3);
 		spi_flash_write((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
-						(uint32 *)&saveFlag, sizeof(SAVE_FLAG));
+						(uint32 *)&save_flag, sizeof(SAVE_FLAG));
 	}
 }
 
 void ICACHE_FLASH_ATTR
-CFG_Load()
+config_load()
 {
 
 	INFO("\r\nload ...\r\n");
 	spi_flash_read((CFG_LOCATION + 3) * SPI_FLASH_SEC_SIZE,
-				   (uint32 *)&saveFlag, sizeof(SAVE_FLAG));
-	if (saveFlag.flag == 0) {
+				   (uint32 *)&save_flag, sizeof(SAVE_FLAG));
+	if (save_flag.flag == 0) {
 		spi_flash_read((CFG_LOCATION + 0) * SPI_FLASH_SEC_SIZE,
-					   (uint32 *)&sysCfg, sizeof(SYSCFG));
+					   (uint32 *)&config, sizeof(SYSCFG));
 	} else {
 		spi_flash_read((CFG_LOCATION + 1) * SPI_FLASH_SEC_SIZE,
-					   (uint32 *)&sysCfg, sizeof(SYSCFG));
+					   (uint32 *)&config, sizeof(SYSCFG));
 	}
-	if(sysCfg.cfg_holder != CFG_HOLDER){
-		os_memset(&sysCfg, 0x00, sizeof sysCfg);
+	if(config.cfg_holder != CFG_HOLDER){
+		os_memset(&config, 0x00, sizeof config);
 
-		sysCfg.cfg_holder = CFG_HOLDER;
+		config.cfg_holder = CFG_HOLDER;
 
-		os_sprintf(sysCfg.sta_ssid, "%s", STA_SSID);
-		os_sprintf(sysCfg.sta_pwd, "%s", STA_PASS);
-		sysCfg.sta_type = STA_TYPE;
+		os_sprintf(config.sta_ssid, "%s", STA_SSID);
+		os_sprintf(config.sta_pwd, "%s", STA_PASS);
+		config.sta_type = STA_TYPE;
 
-		os_sprintf(sysCfg.device_id, MQTT_CLIENT_ID, system_get_chip_id());
-		os_sprintf(sysCfg.topic_prefix, MQTT_TOPIC_PREFIX, system_get_chip_id());
-		os_sprintf(sysCfg.mqtt_host, "%s", MQTT_HOST);
-		sysCfg.mqtt_port = MQTT_PORT;
-		os_sprintf(sysCfg.mqtt_user, "%s", MQTT_USER);
-		os_sprintf(sysCfg.mqtt_pass, "%s", MQTT_PASS);
+		os_sprintf(config.device_id, MQTT_CLIENT_ID, system_get_chip_id());
+		os_sprintf(config.mqtt_topic, MQTT_TOPIC, system_get_chip_id());
+		os_sprintf(config.mqtt_host, "%s", MQTT_HOST);
+		config.mqtt_port = MQTT_PORT;
+		os_sprintf(config.mqtt_user, "%s", MQTT_USER);
+		os_sprintf(config.mqtt_pass, "%s", MQTT_PASS);
 
-		sysCfg.security = DEFAULT_SECURITY;	/* default non ssl */
+		config.security = DEFAULT_SECURITY;	/* default non ssl */
 
-		sysCfg.mqtt_keepalive = MQTT_KEEPALIVE;
+		config.mqtt_keepalive = MQTT_KEEPALIVE;
 
-		INFO(" default configuration\r\n");
+		INFO("Default configuration\r\n");
 
-		CFG_Save();
+		config_save();
 	}
 
 }

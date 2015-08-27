@@ -7,13 +7,13 @@
 
 /*DEFAULT CONFIGURATIONS*/
 
-#define MQTT_HOST			"mosquitto.penninkhof.com" //or "mqtt.yourdomain.com"
+#define MQTT_HOST			"mqtt.yourdomain.com"
 #define MQTT_PORT			1883
 #define MQTT_BUF_SIZE		1024
 #define MQTT_KEEPALIVE		120	 /*second*/
 
 #define MQTT_CLIENT_ID		"DeviceX_%08X"
-#define MQTT_TOPIC_PREFIX	"/DeviceX/%08X/"
+#define MQTT_TOPIC			"/DeviceX/%08X/"
 #define MQTT_USER			"DeviceX_USER"
 #define MQTT_PASS			"DeviceX_PASS"
 
